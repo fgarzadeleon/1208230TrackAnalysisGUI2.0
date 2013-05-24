@@ -22,7 +22,7 @@ function varargout = stormtracker(varargin)
 
 % Edit the above text to modify the response to help stormtracker
 
-% Last Modified by GUIDE v2.5 25-Sep-2012 15:53:31
+% Last Modified by GUIDE v2.5 11-Apr-2013 11:34:51
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -305,6 +305,9 @@ guiMain('editLocalisations_Callback',handles);
 function histogram2dOverlay_Callback(hObject, eventdata, handles)
 guiMain('histogram2dOverlay_Callback',handles);
 
+function temporaryFunction_Callback(hObject, eventdata, handles)
+guiMain('temporaryFunction_Callback',handles);
+
 
 %------------------------------------------------------------------------
 %--------application specific code
@@ -314,7 +317,7 @@ function guiMain(param, handles,varargin)
 
 if strcmp(param, 'init') % on initialise, create the appData variable & initialise fields
     
-    appData.trackParams.mem = 1;
+    appData.trackParams.mem = 0;
     appData.trackParams.dim = 2;
     appData.trackParams.good = 0;
     appData.trackParams.quiet = 0;
@@ -495,6 +498,10 @@ switch param
                 pos(:,2) = appData.data(:,3);
                 pos(:,3) = appData.data(:,1);
                 
+                % Select for localised
+                
+                appData.trackParams.mem = 10;
+                
                 tracks = trackWithDummy(pos, appData.trackParams);
                 nMolecules = max(tracks(:,4));
                 appData.tracks = tracks;
@@ -502,8 +509,9 @@ switch param
                 
                 set(handles.results,'String',['nMolecules = ' num2str(nMolecules)]);
                 
+                
                 if appData.checkboxSaveTracks == 1
-                    save([loadname '.mem1.tracks'], 'tracks');
+                    save([loadname '.mem10.tracks'], 'tracks');
                 end
                 
             end
@@ -538,10 +546,49 @@ switch param
             end
             
         end
+        mymap = colormap(jet(15000));
         
+            trackStart = [];
+            
+          figure(1)
+          hold all
+        molecInds = unique(appData.tracks(:,4));
+        colormap gray
+         
+              
         if  isfield(appData,'tracks')
-            set(handles.results,'String',['nMolecules = ' num2str(max(appData.tracks(:,4)))]);
-            plotTracksColourCoded(appData.tracks,appData)
+            pos = zeros(max(appData.tracks(:,4)),2);
+           for tNum = 1:length(molecInds) % for each track
+               if mod(tNum,100)==0
+               A = ceil(tNum*100/length(molecInds))
+               end
+                xx = find(appData.tracks(:,4)==molecInds(tNum));
+                
+                if ((mean(appData.tracks(xx,1))>90) && (mean(appData.tracks(xx,2)<60)))
+                plot(mean(appData.tracks(xx,1)),mean(appData.tracks(xx,2)),'.',...
+           'MarkerFaceColor',mymap(ceil(appData.tracks(xx(1),3)),:),...
+           'MarkerEdgeColor',mymap(ceil(appData.tracks(xx(1),3)),:),'MarkerSize',10)
+            text(mean(appData.tracks(xx,1)),mean(appData.tracks(xx,2)),...
+                [num2str(appData.tracks(xx(1),3)),'-',num2str(appData.tracks(xx(end),3))],'FontSize',1)
+                end
+                if ~isempty(xx) 
+                    if length(xx)>=4
+                    trackStart = [trackStart; appData.tracks(xx(1),3)];
+                    end
+                end
+            end
+            figure
+            [n, bin] = histc(trackStart,1:50:5000);
+            xBar = (1:50:5000)*.015;
+            bar(xBar,n)
+            xlabel('Time [seconds]')
+            ylabel('Number of Tracks (molecules)')
+            
+            hold off
+            
+           
+%             set(handles.results,'String',['nMolecules = ' num2str(max(appData.tracks(:,4)))]);
+%             plotTracksColourCoded(appData.tracks,appData)
         end
         
         
@@ -687,7 +734,10 @@ switch param
         end
         
         if  isfield(appData,'tracks')
+            
             appData.histD = histD(appData.tracks,appData);
+            hold on;
+            
         end
         
         
@@ -805,15 +855,18 @@ switch param
             pos(:,1) = appData.data(:,2);
             pos(:,2) = appData.data(:,3);
             
+            % Clustering algorithm
+            %clusterThreshold = 0.04/appData.pixel;
+            %[nPositionsInCluster, distancesWithinClusters, distancesBetweenClusters] = nearestNeighbourClustering(pos, clusterThreshold, appData);
+            
             if appData.holdFigureCheckbox
                 figure(appData.figureHandle);
             else
                 figure;
             end
             hold all
-            indexLogical = (appData.data(:,7)*0.1145<.200)&(appData.data(:,8)*0.1145<.200);
-            
-            hs = scatter(pos(indexLogical,1),pos(indexLogical,2),'b.');
+              
+            hs = plot(pos(:,1),pos(:,2),'b.','MarkerSize',1);
             
             %hs = scatter(pos(:,1),pos(:,2),'b.')
             
@@ -1051,7 +1104,7 @@ switch param
         
     case 'countMoleculesInROIs_Callback'
         
-        countMoleculesInROIs;
+        countMoleculesInROIs(appData);
         
         
     case 'localizationProfile_Callback'
@@ -1067,7 +1120,7 @@ switch param
     case 'selectCellROIs_Callback'
         reply = input('Do you want to use Schnitzcell (press enter) or load an ROIData File (press r/R)? ', 's');
         if isempty(reply)
-            
+            UseSchnitzcellForSegmentation
         elseif (reply == 'r' || reply=='R')
             if -1
                 % NOT RUN
@@ -1236,7 +1289,7 @@ switch param
         transformLocalizations;
         
     case 'coLocalisation_Callback'
-        
+        % mod.pos.out Are the files from the modified localisations
         if ~isfield(appData,'data')
             [appData.dataFilename, appData.dataPathname] = uigetfile('*mod.pos.out', 'MatFile data:','MultiSelect', 'off');
             
@@ -1252,11 +1305,13 @@ switch param
         end
         
         if isfield(appData,'data')
-            % standard indexing
+            % Position information of the replication fork
             pos(:,1) = appData.data(:,2);
             pos(:,2) = appData.data(:,3);
         end
         
+        % .ROIData contains the ROI of the cells and their tracks in side
+        % the ROI
         if ~exist('ROIData')
             [ROIDataFilename, ROIDataPathname] = ...
                 uigetfile('*.ROIData', 'MatFile data:','MultiSelect', 'off');
@@ -1268,8 +1323,6 @@ switch param
                 else
                     appData.nFiles = numel(ROIDataFilename);
                 end
-                
-                
                 
                 for ii = 1:appData.nFiles
                     
@@ -1290,7 +1343,7 @@ switch param
         
     case 'editLocalisations_Callback'
         
-        %From the Brightfield
+
         if ~isfield(appData,'testFile')
             [movieFilename, moviePathname] = ...
                 uigetfile('*.fits', 'MatFile data:','MultiSelect', 'off');
@@ -1320,7 +1373,7 @@ switch param
             
             imshow(singleImage,[min(min(singleImage)) max(max(singleImage))]);
             
-            %From the Localisation
+
             if ~(isnumeric(movieFilename)&&movieFilename==0) %check the user has not pressed cancel
                 
                 loadname  = [moviePathname movieFilename];
@@ -1366,111 +1419,142 @@ switch param
         
     case 'histogram2dOverlay_Callback'
         
-        if ~isfield(appData,'data')
-            [appData.dataFilename, appData.dataPathname] = uigetfile({'*.out;*.tracks'}, 'MatFile data:','MultiSelect', 'on');
+        histogram2DOverlay
+
+    case 'temporaryFunction_Callback'       
+                 
+        
+            appData.localizationWindow = 1;
+            [tracksFilename, tracksPathname] = ...
+            uigetfile('*.tracks', 'MatFile data:','MultiSelect', 'on');
+        
+        if ~(isnumeric(tracksFilename)&&tracksFilename==0) %check the user has not pressed cancel
             
-            if ~(isnumeric(appData.dataFilename)&&appData.dataFilename==0)&&(...
-                    strcmp(appData.dataFilename(end-2:end),'out')) %check the user has not pressed cancel
+            info = whos('tracksFilename');
+            if strcmp(info.class,'char')
+                appData.nFiles = 1;
+            else
+                appData.nFiles = numel(tracksFilename);
+            end
+            
+            diffusionFraction = zeros(appData.nFiles,1);
+            D1 = zeros(appData.nFiles,1);
+            D2 = zeros(appData.nFiles,1);
+            
+            for ii = 1:appData.nFiles
                 
-                newData = importdata([appData.dataPathname appData.dataFilename]);
-                if isstruct(newData)
-                    appData.data = newData.data;
+                if appData.nFiles == 1
+                    loadname  = [tracksPathname tracksFilename];
                 else
-                    appData.data = newData;
+                    loadname = [tracksPathname tracksFilename{1,ii}];
+                end
+                
+                newData = importdata(loadname);
+                if isstruct(newData)
+                    appData.tracks = newData.tracks;
+                else
+                    appData.tracks = newData;
                 end
                 clear newData;
                 
-            elseif ~(isnumeric(appData.dataFilename)&&appData.tracksFilename==0)&&(...
-                    strcmp(appData.dataFilename(end-5:end),'tracks')) %check the user has not pressed cancel
+               
+                    boundTracks = twoSpeciesMSD2Threshold_forTraces(appData.tracks, appData);
                 
-                appData.tracks = importdata([appData.dataPathname appData.dataFilename]);
-                appData.data= 'empty';
+                
             end
+            
+            assignin('base', 'MSDThreshResults', [diffusionFraction, D1, D2]);
+            
         end
         
+        % Track the bound tracks
+         
+        boundTracksMeans = [];
+        molecInds = unique(boundTracks(:,4));
+        altAppData = appData;
         
-        if isfield(appData,'data')
-            if isfield(appData,'tracks')
-                tracks = appData.tracks;
-                numMolecules =  max(tracks(:,4));
-                pos = zeros(numMolecules,2);
-                for jj = 1:numMolecules % loop over tracks
-                    
-                    % indexes of this track in the tracks data
-                    xx = find(tracks(:,4)==jj);
-                    pos(jj,1) = mean(tracks(xx,1));
-                    pos(jj,2) = mean(tracks(xx,2));
-                    %if numel(xx)>minStep % include only tracks with at
-                    %least minStep
-                            
-                    %end
-                        % plot(mean(tracks(xx,1)), mean(tracks(xx,2)),'-')
-                end
-                    
-            end
-                
-            else
-                pos(:,1) = appData.data(:,2);
-                pos(:,2) = appData.data(:,3);
-            end
-            reply = input('Do you want to plot an averaged fits movie (press enter) or plot a tif image (press t)? a/b: ', 's');
-            if isempty(reply)
-                
-                [brightfieldFilename, brightfieldPathname] = ...
-                    uigetfile('*.fits', 'fits data:');
-                
-                if ~(isnumeric(brightfieldFilename)&&brightfieldFilename==0) %check the user has not pressed cancel
-                    ImageInfo = fits_read_header([brightfieldPathname brightfieldFilename]);
-                    imageLim = [1 ImageInfo.NAXIS1 1 ImageInfo.NAXIS2];
-                    
-                    if any(strcmp(fieldnames(ImageInfo),'NAXIS3'))
-                        nFrames = ImageInfo.NAXIS3;
-                    else
-                        nFrames = 1;
-                    end
-                    dataIn=ImageStack([brightfieldPathname brightfieldFilename], imageLim);
-                    averageImage = double(getFrame(dataIn,1));
-                    
-                    if nFrames >= 2
+        for tNum = 1:length(molecInds) % for each track
+    
+            xx = find(boundTracks(:,4)==molecInds(tNum));
+            boundTracksMeans = [boundTracksMeans; mean(boundTracks(xx,1)), mean(boundTracks(xx,2)),...
+                boundTracks(xx(1),3), boundTracks(xx(1),4), boundTracks(xx(end),3)];
                         
-                        for ii = 2:nFrames
-                            image = double(getFrame(dataIn,ii));
-                            averageImage = averageImage + image;
-                        end
-                        
-                        averageImage = averageImage / double(nFrames);
-                        
-                    end
-                    
-                    averageImage = flipud(averageImage);
-                    
-                    if appData.holdFigureCheckbox;
-                        figure(appData.figureHandle);
-                        hold all;
-                    else
-                        figure;
-                    end
-                    B = imresize(averageImage, size(averageImage)*4);
-                    imshow(B,[min(min(averageImage)) max(max(B))]);
-                end
-            end
-            
-            %indexLogical = (appData.data(:,7)*0.1145<.200)&(appData.data(:,8)*0.1145<.200);
-            
-            thresholdHist = 0.75;
-            %smoothhist2D([pos(indexLogical,1:2)],(3.5/5)*4,[172*4, 232*4],thresholdHist,'image','red');
-            hold on
-            %hs = plot(pos(indexLogical,1)*4,pos(indexLogical,2)*4,'k.','MarkerSize',1);
-            %smoothhist2D([pos(indexLogical,1:2)],(3.5/1000)*4,[172*4, 232*4],0,'image','black');
-            [rrow ccol] = find(isnan(pos));
-            pos(rrow,:)=[];
-            smoothhist2D(pos(:,1:2),(3.5/5)*4,[172*4, 232*4],thresholdHist,'image','red');
-            smoothhist2D([pos(:,1:2)],(3.5/1000)*4,[172*4, 232*4],0,'image','black');
+        end
+        
+        altAppData.trackParams.mem = appData.trackParams.mem;
+        altAppData.trackParams.maxDisp = 5;
+        longTracks = trackWithDummy(boundTracks(:,1:3),altAppData.trackParams);
+        save([loadname '.OnlyBound.tracks'], 'boundTracks');
+        
 
         
         
+%          appData.localizationWindow = 1;
+%             [tracksFilename, tracksPathname] = ...
+%             uigetfile('*.tracks', 'MatFile data:','MultiSelect', 'on');
+%         
+%         if ~(isnumeric(tracksFilename)&&tracksFilename==0) %check the user has not pressed cancel
+%             
+%             info = whos('tracksFilename');
+%             if strcmp(info.class,'char')
+%                 appData.nFiles = 1;
+%             else
+%                 appData.nFiles = numel(tracksFilename);
+%             end
+%             
+%             diffusionFraction = zeros(appData.nFiles,1);
+%             D1 = zeros(appData.nFiles,1);
+%             D2 = zeros(appData.nFiles,1);
+%             
+%             for ii = 1:appData.nFiles
+%                 
+%                 if appData.nFiles == 1
+%                     loadname  = [tracksPathname tracksFilename];
+%                 else
+%                     loadname = [tracksPathname tracksFilename{1,ii}];
+%                 end
+%                 
+%                 newData = importdata(loadname);
+%                 if isstruct(newData)
+%                     appData.tracks = newData.tracks;
+%                 else
+%                     appData.tracks = newData;
+%                 end
+%                 clear newData;
+%                 
+%                
+%                     boundTracks = twoSpeciesMSD2Threshold_forTraces(appData.tracks, appData);
+%                 
+%                 
+%             end
+%             
+%             assignin('base', 'MSDThreshResults', [diffusionFraction, D1, D2]);
+%             
+%         end
+%          [movieFilename, moviePathname] =...
+%             uigetfile('*.fits', 'MatFile data:','MultiSelect', 'on');
+%             
+%             info = whos('movieFilename');
+%             
+%             for ii = 1:appData.nFiles
+%                 
+%                 if appData.nFiles == 1
+%                     loadname  = [moviePathname movieFilename];
+%                 else
+%                     loadname = [moviePathname movieFilename{1,ii}];
+%                 end
+%                 
+%                 gaussStorm_forTraces(loadname,...
+%                     appData.localizationThresh, appData.localizationWindow,...
+%                     boundTracks);
+%                 
+%             end
+%             
+    
 end
-
 %update handles
 setappdata(handles.figure1, 'appData', appData);
 guidata(handles.figure1, handles);
+
+
+

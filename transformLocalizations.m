@@ -46,6 +46,8 @@ if reply == 'Y'
                 end
                 clear newData;
                 
+                
+                
                 greenPos = data(:,2:3);
                 
                 bluePos = tforminv(tformmatrix,greenPos);

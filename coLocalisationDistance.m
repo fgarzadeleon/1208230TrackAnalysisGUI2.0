@@ -19,7 +19,7 @@ minDistImmobilised = [];
 minDistImmoLoc = [];
 minDistLoc = [];
 
-binning = [0:.04:5];
+binning = 0:.05:1;
 neg = [-1 -1; 1 1];
 
 
@@ -54,7 +54,7 @@ for jj = 1:length(ROIData)
     posIN = pos(posINindex,:)*pixel;
     
     if sum(posINindex)>2
-        doubleForkCount=doubleForkCount+1;
+        doubleForkCount = doubleForkCount+1;
     end
         
     tracksIN = ROIData(jj,1).tracks;
@@ -88,14 +88,13 @@ for jj = 1:length(ROIData)
                 
                 if D(kk) < threshold
                     
-
                     immobileTracks = [immobileTracks; tracksIN(xx,:)];
 
                     meanPosImmobile(ll,:) = [mean(tracksIN(xx,1)),mean(tracksIN(xx,2))];
                     
                     tempDistImmo = sqrt((posIN(:,1)-meanPosImmobile(ll,1)).^2+(posIN(:,2)-meanPosImmobile(ll,2)).^2);
                     minDistImmobilised = [minDistImmobilised; min(tempDistImmo)];
-                    perFork.minDistImmobilised = [minDistImmobilised; tempDistImmo];
+                    perFork.minDistImmobilised = [minDistImmobilised; tempDistImmo]; 
                     [~, indexMin] = min(tempDistImmo);
                     
                     plot([posIN(indexMin,1) meanPosImmobile(ll,1)]/pixel,...

@@ -11,6 +11,7 @@ threshold2 = params.DThresh(2);
 minSteps = params.DhistMinSteps;
 rangeD = params.rangeD;
 holdFigure = params.holdFigureCheckbox;
+mymap = colormap(jet(15000));
 if holdFigure
     figureHandle = params.figureHandle;
 end
@@ -29,22 +30,31 @@ if holdFigure
 else
     figure;
 end
-hold all
+ hold all
 
 immobileTracks = [];
+subDiffusiveTracks = [];
+dispCount=1
 
 for ii = 1:nMolecules
+    if (mod(ii,20) == 0 )
+                fprintf('\n.')
+          else
+              fprintf('.');
+          end
+
+
     
     xx = find(tracks(:,4)==ii);
     
-    if numel(xx)>1
+    if numel(xx)>4
 %          plot(tracks(xx,1)/pixel,tracks(xx,2)/pixel,...
 %              'b-','lineWidth', 1)
-                        colorindex = ceil( length(cmap) * tracks(xx(1),4) / nMolecules );
+                       % colorindex = ceil( length(cmap) * tracks(xx(1),4) / nMolecules );
             
             %plot the track in the chosen colour
-                        plot(tracks(xx,1)/pixel,tracks(xx,2)/pixel,...
-                            '-','Color',cmap(colorindex,:),'lineWidth', 2)
+%                         plot(tracks(xx,1)/pixel,tracks(xx,2)/pixel,...
+%                             '-','Color',cmap(colorindex,:),'lineWidth', 2)
     end
     
     if numel(xx)>minSteps
@@ -57,6 +67,11 @@ for ii = 1:nMolecules
             
             MSD1 = MSD1 + ((tracks(xx(jj+1),1) - tracks(xx(jj),1))^2 +...
                 (tracks(xx(jj+1),2) - tracks(xx(jj),2))^2);
+            
+            displacementHist(dispCount) = sqrt(((tracks(xx(jj+1),1) - tracks(xx(jj),1))^2 +...
+                (tracks(xx(jj+1),2) - tracks(xx(jj),2))^2));
+            
+            dispCount = dispCount + 1;
             
         end
         MSD1 = MSD1/jj; % mean square displacement
@@ -73,6 +88,8 @@ for ii = 1:nMolecules
         D1(kk) = MSD1/(4*dT) - sigmaNoise^2*pixel^2/dT;
         D2(kk) = MSD2/(8*dT) - sigmaNoise^2*pixel^2/dT;
         
+        
+        
         if D1(kk) < threshold1 && D2(kk) < threshold2
             
 %                         colorindex = ceil( length(cmap) * tracks(xx(1),4) / nMolecules );
@@ -88,16 +105,36 @@ for ii = 1:nMolecules
             meanPos(ll,:) = [mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel)];
             ll = ll + 1;
             
+           %plot(tracks(xx,1)/pixel,tracks(xx,2)/pixel,...
+           %'r-','lineWidth', 2)
+            plot(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),'.',...
+           'MarkerFaceColor',mymap(ceil(tracks(xx(1),3)),:),...
+           'MarkerEdgeColor',mymap(ceil(tracks(xx(1),3)),:),'MarkerSize',10)
+       
+           text(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),...
+           [num2str(tracks(xx(1),3)),'-',num2str(tracks(xx(end),3))],'FontSize',12)
+ 
+
+            
         else
-%                    plot(tracks(xx,1)/pixel,tracks(xx,2)/pixel,...
-%            'b-','lineWidth', 2)
+            if D1(kk)<=0.4
+            subDiffusiveTracks = [subDiffusiveTracks; tracks(xx,:)];
+           %   plot(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),...
+           %'b.','MarkerSize',10)
+
+
+            else
+%                       plot(tracks(xx,1)/pixel,tracks(xx,2)/pixel,...
+ %                      'g-','lineWidth', 2)
+           %plot(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),...
+           %'g.','MarkerSize',10)
+            end
         end
         
         % reset MSD and update index
         kk = kk + 1;
         
     end
-    
 end
 
 
@@ -105,30 +142,39 @@ D1(kk:end) = []; % delete unused rows
 D2(kk:end) = []; % delete unused rows
 meanPos(ll:end,:) = [];
 
-for jj = 1:nMolecules
-    xx = find(immobileTracks(:,4)==jj);
-    
-    if ~isempty(xx)
+% for jj = 1:nMolecules
+%     xx = find(immobileTracks(:,4)==jj);
+%     
+%     if ~isempty(xx)
 %        colorindex = ceil( length(cmap) * immobileTracks(xx(1),4) / nMolecules );
-        
-        % plot the track in the chosen colour
-%                 plot(immobileTracks(xx,1)/pixel,immobileTracks(xx,2)/pixel,...
-%                     '-','Color',cmap(colorindex,:),'lineWidth', 1.5)
-        
-%                 plot(immobileTracks(xx,1)/pixel,immobileTracks(xx,2)/pixel,...
-%                     '-','Color',rand(1,3),'lineWidth', 1.5)
-        
+%         
+%         %plot the track in the chosen colour
+% %                 plot(immobileTracks(xx,1)/pixel,immobileTracks(xx,2)/pixel,...
+% %                     '-','Color',cmap(colorindex,:),'lineWidth', 1.5)
+% %         
+% %                 plot(immobileTracks(xx,1)/pixel,immobileTracks(xx,2)/pixel,...
+% %                     '-','Color',rand(1,3),'lineWidth', 1.5)
+%         
 %       plot(immobileTracks(xx,1)/pixel,immobileTracks(xx,2)/pixel,...
 %            'r-','lineWidth', 2)
-        
-    end
-    
-end
+%         
+%     end
+%     
+%     xx = find(subDiffusiveTracks(:,4)==jj);
+%     
+%     if ~isempty(xx)
+%     
+%       plot(subDiffusiveTracks(xx,1)/pixel,subDiffusiveTracks(xx,2)/pixel,...
+%            'g-','lineWidth', 2)
+%         
+%     end
+%     
+% end
 
 %plot mean positions of immobile molecules
 % plot(meanPos(:,1),meanPos(:,2),'ko');
 
-hold off
+
 
 % save('immobileMoleculesMeanPos','meanPos');
 
@@ -136,9 +182,22 @@ D1c = histc(D1,rangeD'); %normalized histogram count
 D2c = histc(D2,rangeD'); %normalized histogram count
 
 figure;
-hist(D1,rangeD');
+hist(D1(D1<threshold1),rangeD');
+
+hold on
+rangeD = rangeD-.1;
+hist(D1(D1>=threshold1&D1<=0.4),rangeD');
+
+hist(D1(D1>0.4),rangeD')
+
 xlim([min(rangeD) max(rangeD)]);
-hold all
+h = findobj(gca,'Type','patch');
+
+display(h)
+set(h(1),'LineWidth',4,'FaceColor','g','EdgeColor','none');
+set(h(2),'LineWidth',4,'FaceColor','b','EdgeColor','none');
+set(h(3),'LineWidth',4,'FaceColor','r','EdgeColor','none');
+
 stem(threshold1,max(D1c),'marker','none');
 xlabel('diffusion coefficient [um^2/s]');
 ylabel('histogram count');
@@ -159,6 +218,13 @@ observedFraction = numel(D1)/nMolecules
 
 meanD1 = NaN;
 meanD2 = NaN;
+
+figure
+[nHist,bin] = histc(displacementHist*1000,[0:100:800]);
+nHist = nHist/sum(nHist);
+bar([0:100:800],nHist)
+xlabel('Displacement [nm]');
+ylabel('Displacement [nm]');
 
 %keyboard
 

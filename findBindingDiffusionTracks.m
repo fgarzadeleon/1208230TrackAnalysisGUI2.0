@@ -63,6 +63,9 @@ for jj = 1:nMolecules % loop over tracks
             
         end        
         
+        if MSD1==0
+            pause()
+        end
         MSD1 = (MSD1/ii) * pixel^2; % mean square displacement
         MSD2 = (MSD2/ll) * pixel^2; % mean square displacement        
  

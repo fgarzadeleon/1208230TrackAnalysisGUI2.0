@@ -48,9 +48,19 @@ D = MSD/(4*dT) - sigmaNoise^2*pixel^2/dT;
 
 % plot histogram of single-molecule diffusion coefficients over rangeD
 figure;
-hist(D,rangeD);
+n = hist(D,rangeD);
+bar(rangeD,n/sum(n),1,'b','EdgeColor','none')
+axis([min(rangeD) max(rangeD) 0 .14])
+
 xlim([min(rangeD), max(rangeD)]);
 xlabel('diffusion coefficient [um^2/s]');
 ylabel('histogram count');
+
+
+
+
+
+
+
 
 end

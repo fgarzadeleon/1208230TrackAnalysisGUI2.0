@@ -65,7 +65,7 @@ locD =  mMSD(2)/(4*dT) - sigmaNoise^2*pixel^2/dT;
 locFrameD = 3/8 * mMSD(2)/dT - sigmaNoise^2*pixel^2/dT;
 
 % average diffusion over frame dT offset in MSD curve
-mMSD(1) = 4*sigmaNoise^2*pixel^2 - 4/3*locFrameD*dT;
+%mMSD(1) = 4*sigmaNoise^2*pixel^2 - 4/3*locFrameD*dT;
 
 % accounting for confinement, localization accuracy, average frame effect
 locFrameConfineD = -bacArea*pixel^2/(12*dT) *...

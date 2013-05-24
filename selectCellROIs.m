@@ -16,27 +16,32 @@ tempStruct = ...
     'impolyVertices',zeros(1,2),...
     'imlineVertices',zeros(1,2));
 
+
+imageI = PrepareWLimage;
+impolyVerticesSchnitzcell = UseSchnitzcellForSegmentation('TempFile');
+        
+
 remainingData = data;
 ROIData = [];
 
 reply = 'Y';
 ii = 1;
 
-while reply == 'Y'
+figure(1)
+hold on
+h = plot(remainingData(:,2),remainingData(:,3),'b.','MarkerSize',1);
+hold on
+
+for cellNum = 1:length(impolyVerticesSchnitzcell)
+
+    impolyVertices = impolyVerticesSchnitzcell{cellNum};
     
-    v = axis;
+    %Line by rectangle fit???
     
-    h = plot(remainingData(:,2),remainingData(:,3),'b.','MarkerSize',1);
-    axis(v);
-    
-    p = impoly;
-    impolyVertices = getPosition(p);
-    delete(p);
-    
-    line = imline;
-    input('Done? Hit Return');
-    imlineVertices = getPosition(line);
-    delete(line);
+    %line = imline;
+    %input('Done? Hit Return');
+    %imlineVertices = getPosition(line);
+    %delete(line);
     
     inIndexes = find( inpolygon(remainingData(:,2),remainingData(:,3),impolyVertices(:,1),impolyVertices(:,2)) );
     inData = remainingData(inIndexes,:);
@@ -66,20 +71,76 @@ while reply == 'Y'
     end
     
     tempStruct.impolyVertices = impolyVertices;
-    tempStruct.imlineVertices = imlineVertices;
+%    tempStruct.imlineVertices = imlineVertices;
     
     ROIData = [ROIData; tempStruct];
     
-    reply = input('Do you want more? Y/N: ', 's');
-    if isempty(reply)
-        reply = 'Y';
-    end
-    
     ii = ii + 1;
-    delete(h);
+    %delete(h);
     plot([impolyVertices(:,1); impolyVertices(1,1)],[impolyVertices(:,2); impolyVertices(1,2)],'r-.')
+    hold on
     
 end
+    
+
+% while reply == 'Y'
+%     
+%     v = axis;
+%     
+%     h = plot(remainingData(:,2),remainingData(:,3),'b.','MarkerSize',1);
+%     axis(v);
+%     
+%     p = impoly;
+%     impolyVertices = getPosition(p);
+%     delete(p);
+%     
+%     line = imline;
+%     input('Done? Hit Return');
+%     imlineVertices = getPosition(line);
+%     delete(line);
+%     
+%     inIndexes = find( inpolygon(remainingData(:,2),remainingData(:,3),impolyVertices(:,1),impolyVertices(:,2)) );
+%     inData = remainingData(inIndexes,:);
+%     
+%     remainingData(inIndexes,:) = [];
+%     
+%     inData(:,11) = ii * ones(numel(inIndexes),1); % ROI id
+%     
+%     %track data for this ROI
+%     if ~isempty(inData)
+%         pos(:,1) = inData(:,2);
+%         pos(:,2) = inData(:,3);
+%         pos(:,3) = inData(:,1);
+%     else 
+%         pos = [];
+%     end
+%     
+%     if ~isempty(pos)
+%         tracks = trackWithDummy(pos, params.trackParams);
+%         nMolecules = max(tracks(:,4));
+%         clear pos;
+%         
+%         tempStruct.localizationData = inData;
+%         tempStruct.tracks = tracks;
+%         tempStruct.nMolecules = nMolecules;
+%         
+%     end
+%     
+%     tempStruct.impolyVertices = impolyVertices;
+%     tempStruct.imlineVertices = imlineVertices;
+%     
+%     ROIData = [ROIData; tempStruct];
+%     
+%     reply = input('Do you want more? Y/N: ', 's');
+%     if isempty(reply)
+%         reply = 'Y';
+%     end
+%     
+%     ii = ii + 1;
+%     delete(h);
+%     plot([impolyVertices(:,1); impolyVertices(1,1)],[impolyVertices(:,2); impolyVertices(1,2)],'r-.')
+%     
+% end
 
 hold off;
 

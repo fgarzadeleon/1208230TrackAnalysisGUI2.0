@@ -145,7 +145,7 @@ plot(lCum, cFraction,'Color',curveColor)
 hold all;
 plot(lCum, cFit)
 legend('data','fit')
-xlabel('l [um]');
+xlabel('l [pixels]');
 ylabel('CDF(l)');
 hold off;
 
