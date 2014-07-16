@@ -356,7 +356,7 @@ if strcmp(param, 'init') % on initialise, create the appData variable & initiali
     appData.maxStep = 8;
     set(handles.maxStep,'String',num2str(appData.maxStep));
     
-    appData.rangeDString = '-0.2:0.05:2'; % D range histD
+    appData.rangeDString = '-0.225:0.05:2'; % D range histD
     appData.rangeD = str2num(appData.rangeDString);
     set(handles.rangeD,'String',appData.rangeDString);
     
@@ -490,28 +490,31 @@ switch param
                     appData.data = newData;
                 end
                 clear newData;
-                
-                pos = zeros(length(appData.data(:,1)),3);
-                
-                % standard indexing
-                pos(:,1) = appData.data(:,2);
-                pos(:,2) = appData.data(:,3);
-                pos(:,3) = appData.data(:,1);
-                
-                % Select for localised
-                
-                appData.trackParams.mem = 10;
-                
-                tracks = trackWithDummy(pos, appData.trackParams);
-                nMolecules = max(tracks(:,4));
-                appData.tracks = tracks;
-                appData.nMolecules = nMolecules;
-                
-                set(handles.results,'String',['nMolecules = ' num2str(nMolecules)]);
-                
-                
-                if appData.checkboxSaveTracks == 1
-                    save([loadname '.mem10.tracks'], 'tracks');
+                if ~isempty(appData.data)
+                    pos = zeros(length(appData.data(:,1)),3);
+
+                    % standard indexing
+                    pos(:,1) = appData.data(:,2);
+                    pos(:,2) = appData.data(:,3);
+                    pos(:,3) = appData.data(:,1);
+
+                    % Select for localised
+
+                    appData.trackParams.mem = 1;
+
+                    tracks = trackWithDummy(pos, appData.trackParams);
+                    nMolecules = max(tracks(:,4));
+                    appData.tracks = tracks;
+                    appData.nMolecules = nMolecules;
+
+                    set(handles.results,'String',['nMolecules = ' num2str(nMolecules)]);
+
+
+                    if appData.checkboxSaveTracks == 1
+                        save([loadname '.disp' num2str(appData.trackParams.maxDisp) ...
+                            '.mem' num2str(appData.trackParams.mem) ...
+                            '.tracks'], 'tracks');
+                    end
                 end
                 
             end
@@ -546,7 +549,7 @@ switch param
             end
             
         end
-        mymap = colormap(jet(15000));
+        mymap = colormap(jet(5000));
         
             trackStart = [];
             
@@ -563,8 +566,10 @@ switch param
                A = ceil(tNum*100/length(molecInds))
                end
                 xx = find(appData.tracks(:,4)==molecInds(tNum));
-                
-                if ((mean(appData.tracks(xx,1))>90) && (mean(appData.tracks(xx,2)<60)))
+                 if length(xx)>4
+%                 plot(appData.tracks(xx,1),appData.tracks(xx,2),'-')
+%                 end
+%                 if ((mean(appData.tracks(xx,1))>90) && (mean(appData.tracks(xx,2)<60)))
                 plot(mean(appData.tracks(xx,1)),mean(appData.tracks(xx,2)),'.',...
            'MarkerFaceColor',mymap(ceil(appData.tracks(xx(1),3)),:),...
            'MarkerEdgeColor',mymap(ceil(appData.tracks(xx(1),3)),:),'MarkerSize',10)
@@ -972,9 +977,17 @@ switch param
             end
             
             diffusionFraction = zeros(appData.nFiles,1);
-            D1 = zeros(appData.nFiles,1);
-            D2 = zeros(appData.nFiles,1);
+            %D1 = zeros(appData.nFiles,1);
+            %D2 = zeros(appData.nFiles,1);
             
+           D1All= [];
+           D2All = [];
+           groupD1 = [];
+           groupD2 = [];
+           meanD1 = [];
+           meanD2 = [];
+           
+    
             for ii = 1:appData.nFiles
                 
                 if appData.nFiles == 1
@@ -991,17 +1004,29 @@ switch param
                 end
                 clear newData;
                 
-                [diffusionFraction(ii), D1(ii), D2(ii)] =...
+                [diffusionFraction(ii), D1, D2] =...
                     twoSpeciesMSD2Threshold_vStephan(appData.tracks, appData);
                 
                 disp_str = {['D histogram threshold results = '...
                     num2str(diffusionFraction(ii)) ', ' num2str(D1(ii)) ', '  num2str(D2(ii))]};
                 
+                D1All = [D1All; D1];
+                groupD1 = [groupD1; ii*ones(length(D1),1)];
+                meanD1 = [meanD1; mean(D1)];
+                
+                D2All = [D2All; D2]; 
+                groupD2 = [groupD2; ii*ones(length(D2),1)];
+                meanD2 = [meanD2; mean(D2)]; 
+                
                 set(handles.results,'String',disp_str);
                 
             end
             
-            assignin('base', 'MSDThreshResults', [diffusionFraction, D1, D2]);
+            %assignin('base', 'MSDThreshResults', [diffusionFraction, D1, D2]);
+            figure(100),
+            boxplot(D2All,groupD2)
+             figure(101)
+             plot(0:.1:1, meanD2, '*')
             
         end
         

@@ -1,4 +1,4 @@
-function [diffusionFraction, meanD1, meanD2] = twoSpeciesMSD2Threshold_vStephan(tracks, params)
+function [diffusionFraction, D1, D2] = twoSpeciesMSD2Threshold_vStephan(tracks, params)
 % MSD diffusion analysis
 
 cmap = colormap(jet);
@@ -105,22 +105,24 @@ for ii = 1:nMolecules
             meanPos(ll,:) = [mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel)];
             ll = ll + 1;
             
-           %plot(tracks(xx,1)/pixel,tracks(xx,2)/pixel,...
-           %'r-','lineWidth', 2)
-            plot(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),'.',...
-           'MarkerFaceColor',mymap(ceil(tracks(xx(1),3)),:),...
-           'MarkerEdgeColor',mymap(ceil(tracks(xx(1),3)),:),'MarkerSize',10)
-       
-           text(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),...
-           [num2str(tracks(xx(1),3)),'-',num2str(tracks(xx(end),3))],'FontSize',12)
+           plot(mean(tracks(xx,1))/pixel,mean(tracks(xx,2))/pixel,...
+           'r.','MarkerSize', 10)
+%             plot(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),'.',...
+%            'MarkerFaceColor',mymap(ceil(tracks(xx(1),3)),:),...
+%            'MarkerEdgeColor',mymap(ceil(tracks(xx(1),3)),:),'MarkerSize',10)
+%        
+%            text(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),...
+%            [num2str(tracks(xx(1),3)),'-',num2str(tracks(xx(end),3))],'FontSize',12)
  
 
             
         else
+%              plot(tracks(xx,1)/pixel,tracks(xx,2)/pixel,...
+%             'b-','lineWidth', 2)
             if D1(kk)<=0.4
             subDiffusiveTracks = [subDiffusiveTracks; tracks(xx,:)];
-           %   plot(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),...
-           %'b.','MarkerSize',10)
+%              plot(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),...
+%            'b.','MarkerSize',10)
 
 
             else
@@ -137,7 +139,7 @@ for ii = 1:nMolecules
     end
 end
 
-
+axis equal
 D1(kk:end) = []; % delete unused rows
 D2(kk:end) = []; % delete unused rows
 meanPos(ll:end,:) = [];
@@ -181,51 +183,60 @@ meanPos(ll:end,:) = [];
 D1c = histc(D1,rangeD'); %normalized histogram count
 D2c = histc(D2,rangeD'); %normalized histogram count
 
+% figure;
+% hist(D1(D1<threshold1),rangeD');
+% 
+% hold on
+% rangeD = rangeD-.1;
+% hist(D1(D1>=threshold1&D1<=0.4),rangeD');
+% 
+% hist(D1(D1>0.4),rangeD')
+% 
+% xlim([min(rangeD) max(rangeD)]);
+% h = findobj(gca,'Type','patch');
+% 
+% display(h)
+% set(h(1),'LineWidth',4,'FaceColor','g','EdgeColor','none');
+% set(h(2),'LineWidth',4,'FaceColor','b','EdgeColor','none');
+% set(h(3),'LineWidth',4,'FaceColor','r','EdgeColor','none');
+% 
+% stem(threshold1,max(D1c),'marker','none');
+% xlabel('diffusion coefficient [um^2/s]');
+% ylabel('histogram count');
+% hold off
+
 figure;
-hist(D1(D1<threshold1),rangeD');
-
-hold on
-rangeD = rangeD-.1;
-hist(D1(D1>=threshold1&D1<=0.4),rangeD');
-
-hist(D1(D1>0.4),rangeD')
-
-xlim([min(rangeD) max(rangeD)]);
-h = findobj(gca,'Type','patch');
-
-display(h)
-set(h(1),'LineWidth',4,'FaceColor','g','EdgeColor','none');
-set(h(2),'LineWidth',4,'FaceColor','b','EdgeColor','none');
-set(h(3),'LineWidth',4,'FaceColor','r','EdgeColor','none');
-
-stem(threshold1,max(D1c),'marker','none');
-xlabel('diffusion coefficient [um^2/s]');
-ylabel('histogram count');
-hold off
-
-figure;
-hist(D2,rangeD');
+[N,binCenters] = hist(D2,rangeD');
+hBar = bar(binCenters,N/(sum(N(:))),'hist'); 
+index = binCenters<0.1;
+colors = [index(:) ...               %# Create a matrix of RGB colors to make
+          zeros(numel(index),1) ...  %#   the indexed bin red and the other bins
+          0.5.*(~index(:))];         %#   dark blue
+set(hBar,'FaceVertexCData',colors);  %# Re-color the bins
+ylim([0 max(N/(sum(N(:))))])
 xlim([min(rangeD) max(rangeD)]);
 hold all
-stem(threshold2,max(D2c),'marker','none');
+%stem(threshold2,max(D2c),'marker','none');
 xlabel('diffusion coefficient [um^2/s]');
 ylabel('histogram count');
+legend(['Bound fraction = ',num2str((ll-1)/(kk-1)*100),' %'])
 hold off
 
-diffusionFraction = (ll-1)/(kk-1)
+diffusionFraction = (ll-1)/(kk-1);
 
-observedFraction = numel(D1)/nMolecules
+observedFraction = numel(D1)/nMolecules;
 
 meanD1 = NaN;
 meanD2 = NaN;
 
-figure
-[nHist,bin] = histc(displacementHist*1000,[0:100:800]);
-nHist = nHist/sum(nHist);
-bar([0:100:800],nHist)
-xlabel('Displacement [nm]');
-ylabel('Displacement [nm]');
+% figure
+% [nHist,bin] = histc(displacementHist*1000,[0:100:800]);
+% nHist = nHist/sum(nHist);
+% bar([0:100:800],nHist)
+% xlabel('Displacement [nm]');
+% ylabel('Displacement [nm]');
 
 %keyboard
+
 
 end

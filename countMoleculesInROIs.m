@@ -86,7 +86,7 @@ title('Distances between clusters');
 
 
 figure;
-hist(countMolecules,4:8:150)
+[ntemp,mtemp] = hist(countMolecules,0:5:max(countMolecules))
 v = axis
 axis([-20 150 v(3) v(4)+2])
 mean(countMolecules)
