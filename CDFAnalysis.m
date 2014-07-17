@@ -28,10 +28,12 @@ for ii = 1:nMolecules
         
         for jj = 1:numel(xx)-1
             
-            distances(kk) = sqrt((tracks(xx(jj+1),1) - tracks(xx(jj),1))^2 +...
-                (tracks(xx(jj+1),2) - tracks(xx(jj),2))^2);
-            
-            kk = kk+1;
+            if tracks(xx(jj+1),3) == tracks(xx(jj),3)+1
+                distances(kk) = sqrt((tracks(xx(jj+1),1) - tracks(xx(jj),1))^2 +...
+                    (tracks(xx(jj+1),2) - tracks(xx(jj),2))^2);
+
+                kk = kk+1;
+            end
             
         end
         

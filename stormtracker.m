@@ -986,6 +986,7 @@ switch param
            groupD2 = [];
            meanD1 = [];
            meanD2 = [];
+           binCenterOfPeakAll = [];
            
     
             for ii = 1:appData.nFiles
@@ -1004,11 +1005,13 @@ switch param
                 end
                 clear newData;
                 
-                [diffusionFraction(ii), D1, D2] =...
+                [diffusionFraction(ii), D1, D2, binCenterOfPeak] =...
                     twoSpeciesMSD2Threshold_vStephan(appData.tracks, appData);
                 
                 disp_str = {['D histogram threshold results = '...
                     num2str(diffusionFraction(ii)) ', ' num2str(D1(ii)) ', '  num2str(D2(ii))]};
+                
+                binCenterOfPeakAll = [binCenterOfPeakAll binCenterOfPeak];
                 
                 D1All = [D1All; D1];
                 groupD1 = [groupD1; ii*ones(length(D1),1)];
@@ -1023,10 +1026,18 @@ switch param
             end
             
             %assignin('base', 'MSDThreshResults', [diffusionFraction, D1, D2]);
-            figure(100),
-            boxplot(D2All,groupD2)
-             figure(101)
-             plot(0:.1:1, meanD2, '*')
+            if length(D1All)>1
+                
+                figure(100),
+                boxplot(D2All,groupD2)
+            
+                figure(101)
+                plot(meanD1, '*')
+             
+                figure(102)
+                plot(binCenterOfPeakAll,'*')
+            
+            end
             
         end
         

@@ -1,4 +1,4 @@
-function [diffusionFraction, D1, D2] = twoSpeciesMSD2Threshold_vStephan(tracks, params)
+function [diffusionFraction, D1, D2, binCenterOfPeak] = twoSpeciesMSD2Threshold_vStephan(tracks, params)
 % MSD diffusion analysis
 
 cmap = colormap(jet);
@@ -105,8 +105,11 @@ for ii = 1:nMolecules
             meanPos(ll,:) = [mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel)];
             ll = ll + 1;
             
-           plot(mean(tracks(xx,1))/pixel,mean(tracks(xx,2))/pixel,...
-           'r.','MarkerSize', 10)
+           %plot(mean(tracks(xx,1))/pixel,mean(tracks(xx,2))/pixel,...
+           %'r.','MarkerSize', 10)
+       
+       
+       
 %             plot(mean(tracks(xx,1)/pixel),mean(tracks(xx,2)/pixel),'.',...
 %            'MarkerFaceColor',mymap(ceil(tracks(xx(1),3)),:),...
 %            'MarkerEdgeColor',mymap(ceil(tracks(xx(1),3)),:),'MarkerSize',10)
@@ -207,13 +210,13 @@ D2c = histc(D2,rangeD'); %normalized histogram count
 
 figure;
 [N,binCenters] = hist(D2,rangeD');
-hBar = bar(binCenters,N/(sum(N(:))),'hist'); 
-index = binCenters<0.1;
+hBar = bar(binCenters(1:end-1),N(1:end-1)/(sum(N(:))),'hist'); 
+index = binCenters(1:end-1)<0.1;
 colors = [index(:) ...               %# Create a matrix of RGB colors to make
           zeros(numel(index),1) ...  %#   the indexed bin red and the other bins
           0.5.*(~index(:))];         %#   dark blue
 set(hBar,'FaceVertexCData',colors);  %# Re-color the bins
-ylim([0 max(N/(sum(N(:))))])
+ylim([0 max(N(1:end-1)/(sum(N(:))))])
 xlim([min(rangeD) max(rangeD)]);
 hold all
 %stem(threshold2,max(D2c),'marker','none');
@@ -228,6 +231,9 @@ observedFraction = numel(D1)/nMolecules;
 
 meanD1 = NaN;
 meanD2 = NaN;
+
+[C I]= max(N(1:end-1)/sum(N(:)));
+binCenterOfPeak = binCenters(I);
 
 % figure
 % [nHist,bin] = histc(displacementHist*1000,[0:100:800]);
