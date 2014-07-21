@@ -740,7 +740,7 @@ switch param
         
         if  isfield(appData,'tracks')
             
-            appData.histD = histD(appData.tracks,appData);
+            appData.histD = histD2(appData.tracks,appData);
             hold on;
             
         end
@@ -987,6 +987,7 @@ switch param
            meanD1 = [];
            meanD2 = [];
            binCenterOfPeakAll = [];
+           meanSqDiffAll = [];
            
     
             for ii = 1:appData.nFiles
@@ -1005,7 +1006,7 @@ switch param
                 end
                 clear newData;
                 
-                [diffusionFraction(ii), D1, D2, binCenterOfPeak] =...
+                [diffusionFraction(ii), D1, D2, binCenterOfPeak, meanSqDiff] =...
                     twoSpeciesMSD2Threshold_vStephan(appData.tracks, appData);
                 
                 disp_str = {['D histogram threshold results = '...
@@ -1020,6 +1021,8 @@ switch param
                 D2All = [D2All; D2]; 
                 groupD2 = [groupD2; ii*ones(length(D2),1)];
                 meanD2 = [meanD2; mean(D2)]; 
+                
+                meanSqDiffAll = [meanSqDiffAll meanSqDiff];
                 
                 set(handles.results,'String',disp_str);
                 
@@ -1036,6 +1039,9 @@ switch param
              
                 figure(102)
                 plot(binCenterOfPeakAll,'*')
+                
+                figure(103)
+                plot(meanSqDiffAll,'*')
             
             end
             

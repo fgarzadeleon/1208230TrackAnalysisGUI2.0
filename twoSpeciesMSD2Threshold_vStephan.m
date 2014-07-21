@@ -1,4 +1,4 @@
-function [diffusionFraction, D1, D2, binCenterOfPeak] = twoSpeciesMSD2Threshold_vStephan(tracks, params)
+function [diffusionFraction, D1, D2, binCenterOfPeak, meanSqDifference] = twoSpeciesMSD2Threshold_vStephan(tracks, params)
 % MSD diffusion analysis
 
 cmap = colormap(jet);
@@ -209,7 +209,7 @@ D2c = histc(D2,rangeD'); %normalized histogram count
 % hold off
 
 figure;
-[N,binCenters] = hist(D2,rangeD');
+[N,binCenters] = hist(D1,rangeD');
 hBar = bar(binCenters(1:end-1),N(1:end-1)/(sum(N(:))),'hist'); 
 index = binCenters(1:end-1)<0.1;
 colors = [index(:) ...               %# Create a matrix of RGB colors to make
@@ -226,6 +226,14 @@ legend(['Bound fraction = ',num2str((ll-1)/(kk-1)*100),' %'])
 hold off
 
 diffusionFraction = (ll-1)/(kk-1);
+
+compareD = importdata(['\\cmfs1.physics.ox.ac.uk\cm\garzadeleon\MATLAB\'...
+'140606PSFModelDiffusion3DSansGStorm\resultsRNAP\2014_07_10_MS001_M9_norflox_All_thresh45.gaussstorm.pos_combined.outROI.out_new_ROI.histD']);
+
+[Ncompare,binCenters] = hist(compareD,rangeD');
+
+meanSqDifference = (1/length(N))*sum((N-Ncompare).^2);
+
 
 observedFraction = numel(D1)/nMolecules;
 
